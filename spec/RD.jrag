@@ -1,0 +1,51 @@
+import java.util.Map;
+import utility.Pair;
+import utility.SetRepUtility;
+import AST.*;
+
+aspect RD {
+	/** The kill function for reaching definitions. */
+	syn Set<Map.Entry> Block.killRD();
+	eq AssignS.killRD() {
+		Set<Map.Entry> ret = SetRepUtility.crossWith(getVar(), SetRepUtility.singleton(new NumLabel("?")));
+		ret.addAll(SetRepUtility.crossWith(getVar(), progLabels()));
+		return ret;
+    }
+	eq LabeledExpr.killRD() = SetRepUtility.emptySet();
+	eq EchoS.killRD() = SetRepUtility.emptySet();
+	eq RequireS.killRD() = SetRepUtility.emptySet();
+	
+	/** The gen function for reaching definitions. */
+	syn Set<Map.Entry> Block.genRD();
+	eq AssignS.genRD() 
+	 = SetRepUtility.singleton(
+	         new Pair<String,Label>(getVar(), getLabelAST()));
+	eq LabeledExpr.genRD() = SetRepUtility.emptySet();
+	eq EchoS.genRD() = SetRepUtility.emptySet();
+	eq RequireS.genRD() = SetRepUtility.emptySet();
+				
+	/** Compute the entry information for the RD analysis. */
+	syn Set<Map.Entry> Block.RDentry() circular [SetRepUtility.emptySet()];
+    eq Block.RDentry() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		if (getLabelAST().equals(progInitLabel())) {
+			ret.addAll(SetRepUtility.crossWith(progFV(), new NumLabel("?")));
+		} else {
+			for (Label l : inFlows()) {
+				Block b = l.itsBlock();
+				ret.addAll(b.RDexit());
+			}
+		}		
+		return ret;
+	}
+	
+	/** Compute the exit information for the RD analysis. */
+	syn Set<Map.Entry> Block.RDexit() circular [SetRepUtility.emptySet()];
+    eq Block.RDexit() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet(); // start with a fresh set!
+		ret.addAll(this.RDentry());
+		ret.removeAll(this.killRD());
+		ret.addAll(this.genRD());		
+		return ret;
+	}
+}

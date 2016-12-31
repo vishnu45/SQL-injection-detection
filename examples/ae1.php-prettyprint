@@ -1,0 +1,6 @@
+<?php
+{
+    [$username = $_POST["uname"]]^1;
+    [$password = $_POST["pwd"]]^2;
+}
+?>

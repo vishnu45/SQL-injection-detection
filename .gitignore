@@ -1,0 +1,23 @@
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.launch
+
+# Eclipse
+.classpath
+.project
+.settings/
+ 
+# Maven
+log/
+target/
+
+# test after repo move

@@ -1,0 +1,83 @@
+// Free Variables analysis
+
+import java.util.Set;
+import utility.SetRepUtility;
+
+aspect FreeVars {
+
+	syn Set<String> Program.FV() = getS().FV();
+	syn Set<String> S.FV();
+	eq AssignS.FV() {
+	    Set<String> ret = SetRepUtility.singleton(getVar());
+	    ret.addAll(getExpr().FV());
+	    return ret;
+	}
+	eq IfS.FV() {
+	   Set<String> ret = getLabeledExpr().FV();
+	   ret.addAll(getS1().FV());
+	   ret.addAll(getS2().FV());
+	   return ret;
+	}
+	eq WhileS.FV() {
+	   Set<String> ret = getLabeledExpr().FV();
+	   ret.addAll(getS().FV());
+	   return ret;
+	}
+	eq CompoundS.FV() {
+	   Set<String> ret = SetRepUtility.emptySet();
+	   for (int i = 0; i < getNumSList(); i++) {
+	      ret.addAll(getSList(i).FV());
+	   }
+	   return ret;
+	}
+	eq EchoS.FV() {
+	    Set<String> ret = SetRepUtility.emptySet();
+	    ret.addAll(getExpr().FV());
+	    return ret;
+	}
+	eq RequireS.FV() {
+	    Set<String> ret = SetRepUtility.emptySet();
+	    return ret;
+	}
+	
+	syn Set<String> Expr.FV();
+	eq VarRefExpr.FV() = SetRepUtility.singleton(getContents());
+	eq NumLitExpr.FV() = SetRepUtility.emptySet();
+	eq StrLitExpr.FV() = SetRepUtility.emptySet();
+	eq FileLitExpr.FV() = SetRepUtility.emptySet();
+	eq BoolLitExpr.FV() = SetRepUtility.emptySet();
+	eq PostExpr.FV() = SetRepUtility.emptySet();
+	eq SqlExpr.FV() {
+		   Set<String> ret = getLeft().FV();
+		   ret.addAll(getRight().FV());
+		   return ret;
+		}
+	
+	eq SqlNumRowsExpr.FV() = getExpr().FV();
+
+	eq ABinaryExpr.FV() {
+	   Set<String> ret = getLeft().FV();
+	   ret.addAll(getRight().FV());
+	   return ret;
+	}
+	
+	eq StringExpr.FV() {
+	   Set<String> ret = getLeft().FV();
+	   ret.addAll(getRight().FV());
+	   return ret;
+	}
+	
+	eq NotExpr.FV() = getExpr().FV();
+	
+	eq LogicExpr.FV()  {
+	   Set<String> ret = getLeft().FV();
+	   ret.addAll(getRight().FV());
+	   return ret;
+	}
+	eq RelExpr.FV()  {
+	   Set<String> ret = getLeft().FV();
+	   ret.addAll(getRight().FV());
+	   return ret;
+	}
+	eq LabeledExpr.FV() = getExpr().FV();
+}

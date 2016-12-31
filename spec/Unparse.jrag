@@ -1,0 +1,80 @@
+aspect Unparse {
+
+	syn String Program.unparse();
+	syn String S.unparse();
+	syn String Expr.unparse();
+	syn String Op.unparse();
+	syn String Label.unparse();
+	
+	syn String Program.toString() = unparse();
+	syn String S.toString() = unparse();
+	syn String Expr.toString() = unparse(); 
+	syn String Op.toString() = getContents();
+	syn String Label.toString() = unparse();
+
+	eq Program.unparse() 
+		{ StringBuffer s = new StringBuffer();
+		  s.append("<?php\n");
+		  s.append(getS().unparse());
+		  s.append("\n?>");
+		  return s.toString();
+		}
+		
+	eq CompoundS.unparse() { 
+		StringBuffer s1 = new StringBuffer();
+		int len = getNumSList();
+		s1.append("{\n");
+		for (int i = 0; i < len; i++) {
+			s1.append(getSList(i).unparse());
+			if (i < len-1) { s1.append("\n"); }	
+		}
+		s1.append("\n}");
+		return s1.toString();
+	}
+	
+	eq VarRefExpr.unparse() { return getContents();}
+	eq NumLitExpr.unparse() { return getContents();}
+	eq BoolLitExpr.unparse() { return getContents();}
+	eq StrLitExpr.unparse() { return getContents();}
+	eq FileLitExpr.unparse() { return getContents();}
+	eq PostExpr.unparse() { return "$_POST[\"" + getContents() +"\"]";}
+	eq SqlExpr.unparse() { return "mysqli_query(" + getLeft().unparse()+ ", " + getRight().unparse()+")"; }
+	eq SqlNumRowsExpr.unparse() { return "mysqli_num_rows(" + getExpr().unparse()+")"; }
+	
+	eq ABinaryExpr.unparse() { return "(" + getLeft().unparse() + " " + getOp().unparse() + " " + getRight().unparse() + ")";}
+	eq NotExpr.unparse() { return "not " + getExpr().unparse();}
+	eq LogicExpr.unparse() { return "(" + getLeft().unparse() + " " + getOp().unparse() + " " + getRight().unparse() + ")";}
+	eq RelExpr.unparse() { return "(" + getLeft().unparse() + " " + getOp().unparse() + " " + getRight().unparse() + ")";}
+	eq StringExpr.unparse() { return "(" + getLeft().unparse() + " " + getOp().unparse() + " " + getRight().unparse() + ")";}	
+
+	eq AssignS.unparse() {
+		return "[" + getVar() + " = " + getExpr().unparse() + "]" 
+			+ "^" + getLabelAST().unparse() + ";";
+	}
+	eq IfS.unparse() {
+	    return "if " + getLabeledExpr().unparse() +"\n"
+	           +  getS1().unparse() 
+	           + "\n" + "else " +"\n"
+	           +  getS2().unparse() ;
+	}
+	eq WhileS.unparse() {
+		return "while "  + getLabeledExpr().unparse() + "\n"
+	                     +  getS().unparse() ; 
+	}
+	
+	eq LabeledExpr.unparse() { 
+		return "[" + getExpr().unparse() + "]^" + getLabelAST().unparse();
+	} 
+	
+	eq EchoS.unparse() {
+		return "[echo " + getExpr().unparse() + "]^" + getLabelAST().unparse()+ ";";
+	}
+	
+	eq RequireS.unparse() {
+		return "[require " + getExpr().unparse() + "]^" + getLabelAST().unparse()+ ";";
+	}
+	
+	eq Op.unparse() = getContents();
+	
+	eq NumLabel.unparse() = getNum().toString();
+}

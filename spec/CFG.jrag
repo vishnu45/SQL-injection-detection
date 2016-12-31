@@ -1,0 +1,229 @@
+import java.util.*;
+import utility.SetRepUtility;
+import utility.FlowGraph;
+
+aspect CFG {
+
+  /** The initial label of an AST node. */
+	syn Label S.init();	
+	eq AssignS.init() = getLabelAST();
+	eq IfS.init() = getLabeledExpr().getLabelAST();
+	eq WhileS.init() = getLabeledExpr().getLabelAST();
+	eq CompoundS.init() = getSList(0).init();
+	eq EchoS.init() = getLabelAST();
+	eq RequireS.init() = getLabelAST();
+	
+	/** The set of final labels of an AST node. */
+	syn Set<Label> Program.finals();
+	eq Program.finals() = getS().finals();
+	syn Set<Label> S.finals();
+	eq AssignS.finals() = SetRepUtility.singleton(getLabelAST());
+	eq IfS.finals() {
+		 Set<Label> ret = getS1().finals();
+		 ret.addAll(getS2().finals());
+		 return ret;
+	   }
+	eq WhileS.finals() = SetRepUtility.singleton(getLabeledExpr().getLabelAST());
+	eq CompoundS.finals() = getSList(getNumSList()-1).finals();
+	eq EchoS.finals() = SetRepUtility.singleton(getLabelAST());
+	eq RequireS.finals() = SetRepUtility.singleton(getLabelAST());
+	
+	/** Blocks are kinds of control flow graph nodes. */
+	public interface Block {
+		Set<Label> inFlows();
+		Set<Label> outFlows();
+		Label getLabelAST();
+	}
+	
+	// Make AssignS, SkipS and LabeledExpr be subtypes of Block
+	AssignS implements Block;
+	EchoS implements Block;
+	RequireS implements Block;
+	LabeledExpr implements Block;	
+	
+	/** Set of blocks in a statement. */
+	syn Set<Block> S.blocks();
+	eq AssignS.blocks() = SetRepUtility.singleton(this);
+	eq EchoS.blocks() = SetRepUtility.singleton(this);
+	eq RequireS.blocks() = SetRepUtility.singleton(this);
+	eq IfS.blocks() {
+	     Set<Block> ret = getS1().blocks();
+	     ret.addAll(getS2().blocks());
+	     ret.add(getLabeledExpr());
+	     return ret;
+	   }
+	eq WhileS.blocks() {
+	      Set<Block> ret = getS().blocks();
+	      ret.add(getLabeledExpr());
+	      return ret;
+	   }
+	eq CompoundS.blocks() {
+	     Set<Block> ret = SetRepUtility.emptySet();
+	     for (int i =0; i < getNumSList(); i++) {
+	        ret.addAll(getSList(i).blocks());
+	     }
+	     return ret;
+	   }
+
+  	// the following are needed so that Blocks can be hashed...
+	/** Are these Blocks equal? */
+ 	public boolean Block.equals(Object oth) {
+  	    if (oth == null || !(oth instanceof Block)) { return false; }
+ 	    Block b = (Block) oth;
+	    return toString().equals(b.toString());
+        }
+  	/** Return the hash code for this Block. */
+	public int Block.hashCode() {
+	    return toString().hashCode();
+	}
+	
+	// Set of labels in a statement
+	syn Set<Label> S.labels();
+	eq AssignS.labels() = SetRepUtility.singleton(getLabelAST());
+	eq EchoS.labels() = SetRepUtility.singleton(getLabelAST());
+	eq RequireS.labels() = SetRepUtility.singleton(getLabelAST());
+	eq IfS.labels() {
+	     Set ret = SetRepUtility.singleton(getLabeledExpr().getLabelAST());
+	     ret.addAll(getS1().labels());
+	     ret.addAll(getS2().labels());
+	     return ret;
+	   }
+	eq WhileS.labels() {
+	     Set ret = SetRepUtility.singleton(getLabeledExpr().getLabelAST());
+	     ret.addAll(getS().labels());
+	     return ret;
+	   }
+	eq CompoundS.labels() {
+	     Set ret = SetRepUtility.emptySet();
+	     for (int i = 0; i < getNumSList(); i++) {
+	       ret.addAll(getSList(i).labels());
+	     }
+	     return ret;
+	   }
+	
+    // the following are needed so that labels can be hashed...
+    /** Are these labels equal? */
+	public boolean NumLabel.equals(Object oth) {
+	   if (oth == null || !(oth instanceof NumLabel)) { return false; }
+	   NumLabel l = (NumLabel) oth;
+	   return getNum().equals(l.getNum());
+	}
+	/** Return the hash code for this label. */
+	public int NumLabel.hashCode() {
+	   return getNum().hashCode();
+	}
+	    
+    /** Mapping from labels back to blocks. */
+	inh Block Label.itsBlock();
+	eq AssignS.getLabelAST().itsBlock() = this;
+	eq EchoS.getLabelAST().itsBlock() = this; 
+	eq RequireS.getLabelAST().itsBlock() = this; 
+	eq LabeledExpr.getLabelAST().itsBlock() = this;
+
+	/** Flows into a block.*/
+	inh Set<Label> S.inFlows();	
+	eq Program.getS().inFlows() = SetRepUtility.emptySet();
+	eq IfS.getS1().inFlows() {
+	    return SetRepUtility.singleton(getLabeledExpr().getLabelAST());
+	}
+	eq IfS.getS2().inFlows() {
+	    return SetRepUtility.singleton(getLabeledExpr().getLabelAST());
+	}
+	eq WhileS.getS().inFlows() {
+	    return SetRepUtility.singleton(getLabeledExpr().getLabelAST());
+	}
+	eq CompoundS.getSList(int index).inFlows() {
+		if (index == 0) {
+			return inFlows();
+		} else { 
+			return getSList(index-1).finals();
+		}
+	}
+	
+	inh Set<Label> LabeledExpr.inFlows();
+	eq IfS.getLabeledExpr().inFlows() = this.inFlows();
+	eq WhileS.getLabeledExpr().inFlows() {
+		Set<Label> ins = this.inFlows();
+		ins.addAll(getS().finals());
+		return ins;
+	}
+
+	/** Next statement in a sequence (lexically), null if none.
+	  * This is a helping attribute for outFlows. */
+	inh S S.next();
+	eq CompoundS.getSList(int index).next() {
+		if (index == getNumSList()-1) {
+			return next();
+		} else {
+			return getSList(index+1);
+		}
+	}
+	eq Program.getS().next() = null;
+	eq IfS.getS1().next() = next();
+	eq IfS.getS2().next() = next();
+	eq WhileS.getS().next() = this;
+	
+	/** Flows out of a block. */
+	inh Set<Label> S.outFlows();	
+	eq Program.getS().outFlows() = SetRepUtility.emptySet();
+	eq IfS.getS1().outFlows() {
+	    return next() == null ? SetRepUtility.emptySet() 
+	    		: SetRepUtility.singleton(next().init());
+	}
+	eq IfS.getS2().outFlows() {
+	    return next() == null ? SetRepUtility.emptySet() 
+	    		: SetRepUtility.singleton(next().init());
+	}
+	eq WhileS.getS().outFlows() {
+	    return SetRepUtility.singleton(getLabeledExpr().getLabelAST());
+	}
+	eq CompoundS.getSList(int index).outFlows() {
+		if (index == getNumSList()-1) {
+			return outFlows();
+		} else { 
+			return SetRepUtility.singleton(getSList(index+1).init());
+		}
+	}
+	
+	inh Set<Label> LabeledExpr.outFlows();
+	eq IfS.getLabeledExpr().outFlows() {
+	    Set<Label> ret = SetRepUtility.singleton(getS1().init());
+	    ret.add(getS2().init());
+	    return ret;
+	}
+	eq WhileS.getLabeledExpr().outFlows() {
+		Set<Label> outs = SetRepUtility.singleton(getS().init());
+		if (next() != null) { outs.add(next().init()); }
+		return outs;
+	}
+
+	/** flows inside of a statement */
+	syn FlowGraph<Label, Label> S.flows();
+	eq AssignS.flows() = new FlowGraph<Label, Label>();
+	eq EchoS.flows() = new FlowGraph<Label, Label>();
+	eq RequireS.flows() = new FlowGraph<Label, Label>();
+	eq IfS.flows() {
+	     FlowGraph<Label, Label> ret = getS1().flows();
+	     ret.putAll(getS2().flows());
+	     ret.put(getLabeledExpr().getLabelAST(), getS1().init());
+	     ret.put(getLabeledExpr().getLabelAST(), getS2().init());
+	     return ret;
+	  }
+	eq WhileS.flows() {
+	     Label l = getLabeledExpr().getLabelAST();
+	     FlowGraph<Label, Label> ret = getS().flows();
+	     ret.put(l, getS().init());
+	     ret.putAll(FlowGraph.crossWith(getS().finals(), l));
+	     return ret;
+          }
+	eq CompoundS.flows() {
+	     FlowGraph<Label, Label> ret = new FlowGraph<Label, Label>();
+	     for (int i = 1; i < getNumSList()-1; i++) {
+	        ret.putAll(getSList(i-1).flows());
+	        Set<Label> finalsM1 = getSList(i-1).finals();
+	        ret.putAll(FlowGraph.crossWith(finalsM1, getSList(i).init()));
+	     }
+	     ret.putAll(getSList(getNumSList()-1).flows());
+	     return ret;
+           }
+}

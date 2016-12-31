@@ -1,0 +1,81 @@
+import java.util.Map;
+import utility.Pair;
+import utility.SetRepUtility;
+import AST.*;
+
+/** Taint Variable analysis is to identify the variables that may get tainted 
+	by the initially tainted variables. This will list all variables that may get
+	tainted values.
+	Property Space	: P(Var*, Var*, U)
+*/
+
+aspect TV {
+	/** The kill function for Taint Variable analysis */
+	syn Set<Map.Entry> Block.killTV();
+	eq AssignS.killTV() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		ret.addAll(SetRepUtility.crossWith(getVar(), progReadVar()));
+		ret.addAll(SetRepUtility.crossWith(getVar(), progFV()));
+		return ret;
+	}
+	eq EchoS.killTV() = SetRepUtility.emptySet();
+	eq RequireS.killTV() = SetRepUtility.emptySet();
+	eq LabeledExpr.killTV() = SetRepUtility.emptySet();
+	
+	/** The gen function for Taint Variable analysis */
+	syn Set<Map.Entry> Block.genTV();
+	eq AssignS.genTV(){
+		Set<Map.Entry> TVret = SetRepUtility.emptySet();  // for Results 
+		
+		Set<String> fvset = SetRepUtility.emptySet(); //store Free Variables of Expression
+	    fvset.addAll(getExpr().FV());
+	    
+	    Set<Map.Entry> itset = SetRepUtility.emptySet(); // getting Tainted Variables at the Entry of Block
+	    itset.addAll(this.ITentry());
+	    Iterator i = itset.iterator();  
+	    while(i.hasNext()) {
+	         Map.Entry me = (Map.Entry)i.next();
+	         if (fvset.contains(me.getKey())){
+	        	 TVret.add(new Pair<String,String>(getVar(), (String) me.getKey()));
+	         }
+	      }
+	    
+	    Set<Map.Entry> tvset = SetRepUtility.emptySet(); // getting Indirectly Tainted Variables at the Entry of Block
+	    tvset.addAll(this.TVentry());
+	    Iterator e = tvset.iterator();  
+	    while(e.hasNext()) {
+	         Map.Entry me = (Map.Entry)e.next();
+	         if (fvset.contains(me.getKey())){
+	        	 TVret.add(new Pair<String,String>(getVar(), (String) me.getKey()));
+	         }
+	      }
+		return TVret;
+	}
+	eq LabeledExpr.genTV() = SetRepUtility.emptySet();
+	eq EchoS.genTV() = SetRepUtility.emptySet();
+	eq RequireS.genTV() = SetRepUtility.emptySet();
+				
+	/** Compute the entry information for the TV analysis. */
+	syn Set<Map.Entry> Block.TVentry() circular [SetRepUtility.emptySet()];
+    eq Block.TVentry() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		if (!getLabelAST().equals(progInitLabel())) {
+			for (Label l : inFlows()) {
+				Block b = l.itsBlock();
+				ret.addAll(b.TVexit());
+			}
+		}		
+		return ret;
+	}
+	
+	/** Compute the exit information for the TV analysis. */
+	syn Set<Map.Entry> Block.TVexit() circular [SetRepUtility.emptySet()];
+    eq Block.TVexit() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet(); // start with a fresh set!
+		ret.addAll(this.TVentry());
+		ret.removeAll(this.killTV());
+		ret.addAll(this.genTV());
+		ret.addAll(this.ITexit());
+		return ret;
+	}
+}

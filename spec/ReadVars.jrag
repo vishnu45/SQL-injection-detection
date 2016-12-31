@@ -1,0 +1,56 @@
+// Free Variables analysis
+
+import java.util.Set;
+import utility.SetRepUtility;
+
+aspect ReadVars {
+
+	syn Set<String> Program.RV() = getS().RV();
+	syn Set<String> S.RV();
+	eq AssignS.RV() {
+		return getExpr().RV();
+	}
+	eq IfS.RV() {
+	   Set<String> ret = SetRepUtility.emptySet();
+	   ret.addAll(getS1().RV());
+	   ret.addAll(getS2().RV());
+	   return ret;
+	}
+	eq WhileS.RV() {
+	   Set<String> ret = SetRepUtility.emptySet();
+	   ret.addAll(getS().RV());
+	   return ret;
+	}
+	eq CompoundS.RV() {
+	   Set<String> ret = SetRepUtility.emptySet();
+	   for (int i = 0; i < getNumSList(); i++) {
+	      ret.addAll(getSList(i).RV());
+	   }
+	   return ret;
+	}
+	eq EchoS.RV() {
+	    Set<String> ret = SetRepUtility.emptySet();
+	    return ret;
+	}
+	eq RequireS.RV() {
+	    Set<String> ret = SetRepUtility.emptySet();
+	    return ret;
+	}
+	
+	syn Set<String> Expr.RV();
+	eq VarRefExpr.RV() = SetRepUtility.emptySet();
+	eq NumLitExpr.RV() = SetRepUtility.emptySet();
+	eq StrLitExpr.RV() = SetRepUtility.emptySet();
+	eq FileLitExpr.RV() = SetRepUtility.emptySet();
+	eq BoolLitExpr.RV() = SetRepUtility.emptySet();
+	eq PostExpr.RV() = SetRepUtility.singleton(getContents());
+	eq SqlExpr.RV() = SetRepUtility.emptySet();
+	eq SqlNumRowsExpr.RV() = SetRepUtility.emptySet();
+
+	eq ABinaryExpr.RV() = SetRepUtility.emptySet();
+	eq StringExpr.RV() = SetRepUtility.emptySet();
+	eq NotExpr.RV() = SetRepUtility.emptySet();	
+	eq LogicExpr.RV()  = SetRepUtility.emptySet();
+	eq RelExpr.RV()  = SetRepUtility.emptySet();	
+	eq LabeledExpr.RV() = SetRepUtility.emptySet();
+}

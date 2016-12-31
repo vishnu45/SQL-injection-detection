@@ -1,0 +1,33 @@
+// Attributes of the whole program, 
+
+import java.util.*;
+import utility.SetRepUtility;
+import utility.FlowGraph;
+
+aspect ProgramGlobalAttributes {
+
+	// Broadcast progLabels (Lab*) to all children of the statement in the program.
+	eq Program.getS().progLabels() = getS().labels();
+	inh Set<Label> Block.progLabels();
+	
+	// Broadcast progReadVar (RV(S*)) to all children of the statement in the program.
+	eq Program.getS().progReadVar() = getS().RV();
+	inh Set<String> Block.progReadVar();
+	
+	// Broadcast progInitLabel (init(S*)) to all children of the program.
+	eq Program.getS().progInitLabel() = getS().init();
+	inh Label Block.progInitLabel();
+	
+	// Broadcast progFV (FV(S*)) to all children in the program.
+	eq Program.getS().progFV() = getS().FV();
+	inh Set<String> Block.progFV();
+
+	// Broadcast progAST to all children in the program.
+	eq Program.getS().progAST() = this;
+	inh Program S.progAST();
+	inh Program Expr.progAST();
+
+	// Broadcast progCFG to all children in the program.
+	eq Program.getS().progCFG() = getS().flows();
+	inh FlowGraph<Label,Label> Block.progCFG();
+}

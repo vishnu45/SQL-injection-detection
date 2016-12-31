@@ -1,0 +1,93 @@
+Program goal =
+  mainblock                            {: return new Program(mainblock); :}
+  ;
+ 
+S mainblock =
+    PHPBEGIN blockStmtList PHPEND      {: return new CompoundS(blockStmtList); :}
+  ; 
+   
+S block =
+    LBRACE blockStmtList RBRACE        {: return new CompoundS(blockStmtList); :}
+  ;
+  
+
+List blockStmtList =
+    stmt                				{: return new List().add(stmt); :}
+  | blockStmtList  stmt           		{: return blockStmtList.add(stmt); :}
+  ;
+  
+S stmt =
+    IDENTIFIER ASSIGN expression.e SEMICOLON   {: return new AssignS(new NumLabel(LabelUtility.nextLabel()), IDENTIFIER, e); :}
+  | IF LPAREN expression.be RPAREN block.b ELSE block.c  {: return new IfS(new LabeledExpr(new NumLabel(LabelUtility.nextLabel()), be), b, c); :}
+  | WHILE LPAREN expression.be RPAREN block     {: return new WhileS(new LabeledExpr(new NumLabel(LabelUtility.nextLabel()), be), block); :}
+  | ECHO expression.be SEMICOLON          {: return new EchoS(new NumLabel(LabelUtility.nextLabel()), be); :}
+  | REQUIRE FILEVAR SEMICOLON          {: return new RequireS(new NumLabel(LabelUtility.nextLabel()), new FileLitExpr(FILEVAR)); :}
+  ;
+
+
+Expr strprimary =
+	   STRVAR					  {: return new StrLitExpr(STRVAR); :}
+	 ;
+
+Expr strfactor =
+     strprimary.p                 {: return p; :}  
+   | strfactor.l OPPLUS strprimary.r 
+                                  {: return new StringExpr(l, new Op_s(OPPLUS), r); :}
+   ;
+
+Expr strfactor2 =
+	strfactor.l OPPLUS IDENTIFIER
+								 {: return new StringExpr(l, new Op_s(OPPLUS), new VarRefExpr(IDENTIFIER)); :}
+   ;
+   
+Expr primary =
+       IDENTIFIER                {: return new VarRefExpr(IDENTIFIER); :}
+     | NUMBER                   {: return new NumLitExpr(NUMBER); :}  
+     | TRUE                     {: return new BoolLitExpr(TRUE); :}
+     | FALSE                    {: return new BoolLitExpr(FALSE); :}
+     | NOT primary.e            {: return new NotExpr(e); :}
+     | LPAREN expression.e RPAREN {: return e; :}
+     ;
+     
+Expr factor =
+     primary.p                 {: return p; :}
+   | factor.l OPMUL primary.r 
+                               {: return new ABinaryExpr(l, new Op_a(OPMUL), r); :}
+   ;
+   
+Expr aexpression =
+     factor.f                  {: return f; :}
+   | aexpression.l OPPLUS factor.r
+                               {: return new ABinaryExpr(l, new Op_a(OPPLUS), r); :}
+   | aexpression.l OPMINUS factor.r
+                               {: return new ABinaryExpr(l, new Op_a(OPMINUS), r); :}
+   ;
+   
+Expr relexp =
+       aexpression
+     | aexpression.l OPRELATIONAL aexpression.r 
+                                {: return new RelExpr(l, new Op_r(OPRELATIONAL), r); :}
+     ;
+
+Expr conj =
+       relexp.re               {: return re; :}
+     | conj.l AND relexp.r 
+                               {: return new LogicExpr(l, new Op_b(AND), r); :}
+     ;
+     
+Expr expression = 
+       conj.c                  {: return c; :}                        
+     | expression.l OR conj.r 
+                               {: return new LogicExpr(l, new Op_b(OR), r); :}
+     | POST LSBRACE READIDENTIFIER RSBRACE 
+     						   {: return new PostExpr(READIDENTIFIER); :}
+     | SQL LPAREN IDENTIFIER.l SEP IDENTIFIER.r RPAREN 
+     						   {: return new SqlExpr(new VarRefExpr(l),new VarRefExpr(r)); :}
+     | SQLNUMROWS LPAREN IDENTIFIER RPAREN 
+     						   {: return new SqlNumRowsExpr(new VarRefExpr(IDENTIFIER)); :}						   
+     | strfactor.s             {: return s; :}						   	
+     | strfactor2.s
+     						   	{: return s; :}					   
+						   
+     
+     ;						   

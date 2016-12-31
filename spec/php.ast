@@ -1,0 +1,37 @@
+Program ::= S;
+
+abstract Op ::= <Contents>;
+Op_b : Op;
+Op_r : Op;
+Op_a : Op;
+Op_s : Op;
+
+abstract Expr;
+
+VarRefExpr: Expr ::= <Contents>;
+NumLitExpr: Expr ::= <Contents>;
+StrLitExpr: Expr ::= <Contents>;
+FileLitExpr: Expr ::= <Contents>;
+BoolLitExpr: Expr ::= <Contents>;
+PostExpr: Expr ::= <Contents>;
+
+NotExpr: Expr ::= Expr;
+ABinaryExpr: Expr ::= Left:Expr Op:Op_a Right:Expr;
+LogicExpr: Expr ::= Left:Expr Op:Op_b Right:Expr;
+RelExpr: Expr ::= Left:Expr Op:Op_r Right:Expr;
+StringExpr: Expr ::= Left:Expr Op:Op_s Right:Expr;
+LabeledExpr: Expr ::= LabelAST:Label Expr; 
+SqlExpr: Expr ::= Left:Expr Right:Expr;
+SqlNumRowsExpr: Expr ::= Expr;
+
+// statements
+abstract S; 
+CompoundS: S ::= SList:S* ;
+AssignS:S ::= LabelAST:Label <Var> Expr;
+IfS:S ::= LabeledExpr S1:S S2:S  ;
+WhileS:S ::= LabeledExpr S  ;
+EchoS:S ::= LabelAST:Label Expr;
+RequireS:S ::= LabelAST:Label Expr;
+
+abstract Label;
+NumLabel:Label ::= <Num>;

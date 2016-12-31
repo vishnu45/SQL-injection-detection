@@ -1,0 +1,69 @@
+import utility.PPUtility;
+
+aspect PrettyPrint {
+
+    inh int S.nestingLevel();
+    eq Program.getS().nestingLevel() = 0;
+    eq CompoundS.getSList(int index).nestingLevel() = nestingLevel()+1;
+    eq IfS.getS1().nestingLevel() = nestingLevel();
+    eq IfS.getS2().nestingLevel() = nestingLevel();
+    eq WhileS.getS().nestingLevel() = nestingLevel();
+    
+        syn String Program.prettyPrint();
+        syn String S.prettyPrint();
+        syn String Expr.prettyPrint();
+        syn String Op.prettyPrint();
+        syn String Label.prettyPrint();
+        
+        eq Expr.prettyPrint() = unparse(); 
+        eq Op.prettyPrint() = unparse();
+        eq Label.prettyPrint() = unparse();
+
+        // every AST is responsible for printing its own indentation.
+        eq Program.prettyPrint() { 
+          StringBuffer s = new StringBuffer();
+		  s.append("<?php\n");
+		  s.append(getS().prettyPrint());
+		  s.append("\n?>");
+		  return s.toString();
+		}
+        eq S.prettyPrint() = PPUtility.spacesForIndent(nestingLevel()) + unparse();
+        eq CompoundS.prettyPrint() { 
+                StringBuffer s1 = new StringBuffer();
+                String indent = PPUtility.spacesForIndent(nestingLevel());
+                s1.append(indent);
+                s1.append("{\n");
+                int len = getNumSList();
+                for (int i = 0; i < len; i++) {
+                        s1.append(getSList(i).prettyPrint());
+                        if (i < len-1) { s1.append("\n"); }     
+                }
+                s1.append(PPUtility.spacesForIndent(nestingLevel()));
+                s1.append('\n'); s1.append(indent); s1.append("}");
+                return s1.toString();
+        }
+
+        eq AssignS.prettyPrint() {
+            String indent = PPUtility.spacesForIndent(nestingLevel()); 
+                return indent + "[" + getVar() + " = " + getExpr().prettyPrint() + "]"
+                        + "^" + getLabelAST().prettyPrint() + ";";
+        }
+        eq IfS.prettyPrint() {
+            String indent = PPUtility.spacesForIndent(nestingLevel()); 
+            return indent + "if " + getLabeledExpr().prettyPrint() 
+                   + " \n" + getS1().prettyPrint() 
+                   + " else\n" + getS2().prettyPrint();
+        }
+        eq WhileS.prettyPrint() { return PPUtility.spacesForIndent(nestingLevel())
+                                 + "while "  + getLabeledExpr().prettyPrint() 
+                                 + " \n" + getS().prettyPrint(); }
+        eq LabeledExpr.prettyPrint() { 
+                return "[" + getExpr().prettyPrint() + "]^" + getLabelAST().prettyPrint();
+        } 
+        eq EchoS.prettyPrint() {
+            String indent = PPUtility.spacesForIndent(nestingLevel()); 
+                return indent + "[echo " + getExpr().prettyPrint() + "]^"
+                        +  getLabelAST().prettyPrint() +";";
+        }
+        
+}

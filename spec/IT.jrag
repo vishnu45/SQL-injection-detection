@@ -1,0 +1,59 @@
+import java.util.Map;
+import utility.Pair;
+import utility.SetRepUtility;
+import AST.*;
+
+/*Initial Taint Analysis is to identify the variables that the directly tainted from
+ * user input through Post Expression (Post Method of the Form)
+ * Property Space	: P(Var*, Var*, U)
+ */
+aspect IT {
+	/** The kill function for Initial Taint Analysis */
+	syn Set<Map.Entry> Block.killIT();
+	eq AssignS.killIT() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		ret.addAll(SetRepUtility.crossWith(getVar(), progReadVar()));
+		return ret;
+	}
+	eq EchoS.killIT() = SetRepUtility.emptySet();
+	eq RequireS.killIT() = SetRepUtility.emptySet();
+	eq LabeledExpr.killIT() = SetRepUtility.emptySet();
+	
+	/** The gen function for Inital Taint Analysis */
+	syn Set<Map.Entry> Block.genIT();
+	eq AssignS.genIT(){
+		Expr exp = getExpr();
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		if (exp instanceof PostExpr){
+			String s = ((PostExpr)exp).getContents();
+			ret.add(new Pair<String,String>(getVar(), s));
+		}
+		return ret;
+	}
+	eq LabeledExpr.genIT() = SetRepUtility.emptySet();
+	eq EchoS.genIT() = SetRepUtility.emptySet();
+	eq RequireS.genIT() = SetRepUtility.emptySet();
+				
+	/** Compute the entry information for the IT analysis. */
+	syn Set<Map.Entry> Block.ITentry() circular [SetRepUtility.emptySet()];
+    eq Block.ITentry() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		if (!getLabelAST().equals(progInitLabel())) {
+			for (Label l : inFlows()) {
+				Block b = l.itsBlock();
+				ret.addAll(b.ITexit());
+			}
+		}		
+		return ret;
+	}
+	
+	/** Compute the exit information for the IT analysis. */
+	syn Set<Map.Entry> Block.ITexit() circular [SetRepUtility.emptySet()];
+    eq Block.ITexit() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet(); // start with a fresh set!
+		ret.addAll(this.ITentry());
+		ret.removeAll(this.killIT());
+		ret.addAll(this.genIT());		
+		return ret;
+	}
+}

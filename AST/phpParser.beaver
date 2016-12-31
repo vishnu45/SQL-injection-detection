@@ -1,0 +1,273 @@
+%header {: // Generated from AST/phpParser.all
+package AST;
+import AST.*;
+import utility.LabelUtility; :};
+%embed {: // Generated from AST/phpParser.all
+class Events extends Parser.Events {
+    public void syntaxError(Symbol token) {
+      StringBuffer s = new StringBuffer();
+      s.append(token.getLine(token.getStart()) + ", " + token.getColumn(token.getStart()) + "\n");
+      s.append("  *** Syntactic error: unexpected token " + Terminals.NAMES[token.getId()]);
+      throw new Error(s.toString());
+    }
+    public void scannerError(Scanner.Exception e) {
+      StringBuffer s = new StringBuffer();
+      s.append(e.line + ", " + e.column + "\n");
+      s.append("  *** Lexical error: " + e.getMessage());
+      throw new Error(s.toString());
+    }
+  }
+  {LabelUtility.reset();  
+  report = new Events(); } // Use error handler in parser :};
+%terminals PHPBEGIN;
+%terminals PHPEND;
+%terminals LBRACE;
+%terminals RBRACE;
+%terminals IDENTIFIER;
+%terminals ASSIGN;
+%terminals SEMICOLON;
+%terminals IF;
+%terminals LPAREN;
+%terminals RPAREN;
+%terminals ELSE;
+%terminals WHILE;
+%terminals ECHO;
+%terminals REQUIRE;
+%terminals FILEVAR;
+%terminals STRVAR;
+%terminals OPPLUS;
+%terminals NUMBER;
+%terminals TRUE;
+%terminals FALSE;
+%terminals NOT;
+%terminals OPMUL;
+%terminals OPMINUS;
+%terminals OPRELATIONAL;
+%terminals AND;
+%terminals OR;
+%terminals POST;
+%terminals LSBRACE;
+%terminals READIDENTIFIER;
+%terminals RSBRACE;
+%terminals SQL;
+%terminals SEP;
+%terminals SQLNUMROWS;
+%typeof strfactor = "Expr";
+%typeof goal = "Program";
+%typeof strfactor2 = "Expr";
+%typeof expression = "Expr";
+%typeof mainblock = "S";
+%typeof conj = "Expr";
+%typeof relexp = "Expr";
+%typeof strprimary = "Expr";
+%typeof blockStmtList = "List";
+%typeof block = "S";
+%typeof aexpression = "Expr";
+%typeof factor = "Expr";
+%typeof stmt = "S";
+%typeof primary = "Expr";
+%goal goal;
+goal =
+    mainblock.mainblock {: ASTNode _node_ = new Program(mainblock);
+        _node_.setStart(Symbol.getLine(_symbol_mainblock.getStart()), (short) Symbol.getColumn(_symbol_mainblock.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_mainblock.getEnd()), (short) Symbol.getColumn(_symbol_mainblock.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+mainblock =
+    PHPBEGIN.PHPBEGIN blockStmtList.blockStmtList PHPEND.PHPEND {: ASTNode _node_ = new CompoundS(blockStmtList);
+        _node_.setStart(Symbol.getLine(PHPBEGIN.getStart()), (short) Symbol.getColumn(PHPBEGIN.getStart()));
+        _node_.setEnd(Symbol.getLine(PHPEND.getEnd()), (short) Symbol.getColumn(PHPEND.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+block =
+    LBRACE.LBRACE blockStmtList.blockStmtList RBRACE.RBRACE {: ASTNode _node_ = new CompoundS(blockStmtList);
+        _node_.setStart(Symbol.getLine(LBRACE.getStart()), (short) Symbol.getColumn(LBRACE.getStart()));
+        _node_.setEnd(Symbol.getLine(RBRACE.getEnd()), (short) Symbol.getColumn(RBRACE.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+blockStmtList =
+    stmt.stmt {: ASTNode _node_ = new List().add(stmt);
+        _node_.setStart(Symbol.getLine(_symbol_stmt.getStart()), (short) Symbol.getColumn(_symbol_stmt.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_stmt.getEnd()), (short) Symbol.getColumn(_symbol_stmt.getEnd()));
+        return new Symbol(_node_); :}
+
+  | blockStmtList.blockStmtList stmt.stmt {: ASTNode _node_ = blockStmtList.add(stmt);
+        _node_.setStart(Symbol.getLine(_symbol_blockStmtList.getStart()), (short) Symbol.getColumn(_symbol_blockStmtList.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_stmt.getEnd()), (short) Symbol.getColumn(_symbol_stmt.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+stmt =
+    IDENTIFIER.IDENTIFIER ASSIGN.ASSIGN expression.e SEMICOLON.SEMICOLON {: ASTNode _node_ = new AssignS(new NumLabel(LabelUtility.nextLabel()), ((String)IDENTIFIER.value), e);
+        _node_.setStart(Symbol.getLine(IDENTIFIER.getStart()), (short) Symbol.getColumn(IDENTIFIER.getStart()));
+        _node_.setEnd(Symbol.getLine(SEMICOLON.getEnd()), (short) Symbol.getColumn(SEMICOLON.getEnd()));
+        return new Symbol(_node_); :}
+
+  | IF.IF LPAREN.LPAREN expression.be RPAREN.RPAREN block.b ELSE.ELSE block.c {: ASTNode _node_ = new IfS(new LabeledExpr(new NumLabel(LabelUtility.nextLabel()), be), b, c);
+        _node_.setStart(Symbol.getLine(IF.getStart()), (short) Symbol.getColumn(IF.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_c.getEnd()), (short) Symbol.getColumn(_symbol_c.getEnd()));
+        return new Symbol(_node_); :}
+
+  | WHILE.WHILE LPAREN.LPAREN expression.be RPAREN.RPAREN block.block {: ASTNode _node_ = new WhileS(new LabeledExpr(new NumLabel(LabelUtility.nextLabel()), be), block);
+        _node_.setStart(Symbol.getLine(WHILE.getStart()), (short) Symbol.getColumn(WHILE.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_block.getEnd()), (short) Symbol.getColumn(_symbol_block.getEnd()));
+        return new Symbol(_node_); :}
+
+  | ECHO.ECHO expression.be SEMICOLON.SEMICOLON {: ASTNode _node_ = new EchoS(new NumLabel(LabelUtility.nextLabel()), be);
+        _node_.setStart(Symbol.getLine(ECHO.getStart()), (short) Symbol.getColumn(ECHO.getStart()));
+        _node_.setEnd(Symbol.getLine(SEMICOLON.getEnd()), (short) Symbol.getColumn(SEMICOLON.getEnd()));
+        return new Symbol(_node_); :}
+
+  | REQUIRE.REQUIRE FILEVAR.FILEVAR SEMICOLON.SEMICOLON {: ASTNode _node_ = new RequireS(new NumLabel(LabelUtility.nextLabel()), new FileLitExpr(((String)FILEVAR.value)));
+        _node_.setStart(Symbol.getLine(REQUIRE.getStart()), (short) Symbol.getColumn(REQUIRE.getStart()));
+        _node_.setEnd(Symbol.getLine(SEMICOLON.getEnd()), (short) Symbol.getColumn(SEMICOLON.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+strprimary =
+    STRVAR.STRVAR {: ASTNode _node_ = new StrLitExpr(((String)STRVAR.value));
+        _node_.setStart(Symbol.getLine(STRVAR.getStart()), (short) Symbol.getColumn(STRVAR.getStart()));
+        _node_.setEnd(Symbol.getLine(STRVAR.getEnd()), (short) Symbol.getColumn(STRVAR.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+strfactor =
+    strprimary.p {: ASTNode _node_ = p;
+        _node_.setStart(Symbol.getLine(_symbol_p.getStart()), (short) Symbol.getColumn(_symbol_p.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_p.getEnd()), (short) Symbol.getColumn(_symbol_p.getEnd()));
+        return new Symbol(_node_); :}
+
+  | strfactor.l OPPLUS.OPPLUS strprimary.r {: ASTNode _node_ = new StringExpr(l, new Op_s(((String)OPPLUS.value)), r);
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_r.getEnd()), (short) Symbol.getColumn(_symbol_r.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+strfactor2 =
+    strfactor.l OPPLUS.OPPLUS IDENTIFIER.IDENTIFIER {: ASTNode _node_ = new StringExpr(l, new Op_s(((String)OPPLUS.value)), new VarRefExpr(((String)IDENTIFIER.value)));
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(IDENTIFIER.getEnd()), (short) Symbol.getColumn(IDENTIFIER.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+primary =
+    IDENTIFIER.IDENTIFIER {: ASTNode _node_ = new VarRefExpr(((String)IDENTIFIER.value));
+        _node_.setStart(Symbol.getLine(IDENTIFIER.getStart()), (short) Symbol.getColumn(IDENTIFIER.getStart()));
+        _node_.setEnd(Symbol.getLine(IDENTIFIER.getEnd()), (short) Symbol.getColumn(IDENTIFIER.getEnd()));
+        return new Symbol(_node_); :}
+
+  | NUMBER.NUMBER {: ASTNode _node_ = new NumLitExpr(((String)NUMBER.value));
+        _node_.setStart(Symbol.getLine(NUMBER.getStart()), (short) Symbol.getColumn(NUMBER.getStart()));
+        _node_.setEnd(Symbol.getLine(NUMBER.getEnd()), (short) Symbol.getColumn(NUMBER.getEnd()));
+        return new Symbol(_node_); :}
+
+  | TRUE.TRUE {: ASTNode _node_ = new BoolLitExpr(((String)TRUE.value));
+        _node_.setStart(Symbol.getLine(TRUE.getStart()), (short) Symbol.getColumn(TRUE.getStart()));
+        _node_.setEnd(Symbol.getLine(TRUE.getEnd()), (short) Symbol.getColumn(TRUE.getEnd()));
+        return new Symbol(_node_); :}
+
+  | FALSE.FALSE {: ASTNode _node_ = new BoolLitExpr(((String)FALSE.value));
+        _node_.setStart(Symbol.getLine(FALSE.getStart()), (short) Symbol.getColumn(FALSE.getStart()));
+        _node_.setEnd(Symbol.getLine(FALSE.getEnd()), (short) Symbol.getColumn(FALSE.getEnd()));
+        return new Symbol(_node_); :}
+
+  | NOT.NOT primary.e {: ASTNode _node_ = new NotExpr(e);
+        _node_.setStart(Symbol.getLine(NOT.getStart()), (short) Symbol.getColumn(NOT.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_e.getEnd()), (short) Symbol.getColumn(_symbol_e.getEnd()));
+        return new Symbol(_node_); :}
+
+  | LPAREN.LPAREN expression.e RPAREN.RPAREN {: ASTNode _node_ = e;
+        _node_.setStart(Symbol.getLine(LPAREN.getStart()), (short) Symbol.getColumn(LPAREN.getStart()));
+        _node_.setEnd(Symbol.getLine(RPAREN.getEnd()), (short) Symbol.getColumn(RPAREN.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+factor =
+    primary.p {: ASTNode _node_ = p;
+        _node_.setStart(Symbol.getLine(_symbol_p.getStart()), (short) Symbol.getColumn(_symbol_p.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_p.getEnd()), (short) Symbol.getColumn(_symbol_p.getEnd()));
+        return new Symbol(_node_); :}
+
+  | factor.l OPMUL.OPMUL primary.r {: ASTNode _node_ = new ABinaryExpr(l, new Op_a(((String)OPMUL.value)), r);
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_r.getEnd()), (short) Symbol.getColumn(_symbol_r.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+aexpression =
+    factor.f {: ASTNode _node_ = f;
+        _node_.setStart(Symbol.getLine(_symbol_f.getStart()), (short) Symbol.getColumn(_symbol_f.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_f.getEnd()), (short) Symbol.getColumn(_symbol_f.getEnd()));
+        return new Symbol(_node_); :}
+
+  | aexpression.l OPPLUS.OPPLUS factor.r {: ASTNode _node_ = new ABinaryExpr(l, new Op_a(((String)OPPLUS.value)), r);
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_r.getEnd()), (short) Symbol.getColumn(_symbol_r.getEnd()));
+        return new Symbol(_node_); :}
+
+  | aexpression.l OPMINUS.OPMINUS factor.r {: ASTNode _node_ = new ABinaryExpr(l, new Op_a(((String)OPMINUS.value)), r);
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_r.getEnd()), (short) Symbol.getColumn(_symbol_r.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+relexp =
+    aexpression.aexpression 
+  | aexpression.l OPRELATIONAL.OPRELATIONAL aexpression.r {: ASTNode _node_ = new RelExpr(l, new Op_r(((String)OPRELATIONAL.value)), r);
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_r.getEnd()), (short) Symbol.getColumn(_symbol_r.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+conj =
+    relexp.re {: ASTNode _node_ = re;
+        _node_.setStart(Symbol.getLine(_symbol_re.getStart()), (short) Symbol.getColumn(_symbol_re.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_re.getEnd()), (short) Symbol.getColumn(_symbol_re.getEnd()));
+        return new Symbol(_node_); :}
+
+  | conj.l AND.AND relexp.r {: ASTNode _node_ = new LogicExpr(l, new Op_b(((String)AND.value)), r);
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_r.getEnd()), (short) Symbol.getColumn(_symbol_r.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+expression =
+    conj.c {: ASTNode _node_ = c;
+        _node_.setStart(Symbol.getLine(_symbol_c.getStart()), (short) Symbol.getColumn(_symbol_c.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_c.getEnd()), (short) Symbol.getColumn(_symbol_c.getEnd()));
+        return new Symbol(_node_); :}
+
+  | expression.l OR.OR conj.r {: ASTNode _node_ = new LogicExpr(l, new Op_b(((String)OR.value)), r);
+        _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_r.getEnd()), (short) Symbol.getColumn(_symbol_r.getEnd()));
+        return new Symbol(_node_); :}
+
+  | POST.POST LSBRACE.LSBRACE READIDENTIFIER.READIDENTIFIER RSBRACE.RSBRACE {: ASTNode _node_ = new PostExpr(((String)READIDENTIFIER.value));
+        _node_.setStart(Symbol.getLine(POST.getStart()), (short) Symbol.getColumn(POST.getStart()));
+        _node_.setEnd(Symbol.getLine(RSBRACE.getEnd()), (short) Symbol.getColumn(RSBRACE.getEnd()));
+        return new Symbol(_node_); :}
+
+  | SQL.SQL LPAREN.LPAREN IDENTIFIER.l SEP.SEP IDENTIFIER.r RPAREN.RPAREN {: ASTNode _node_ = new SqlExpr(new VarRefExpr(((String)l.value)),new VarRefExpr(((String)r.value)));
+        _node_.setStart(Symbol.getLine(SQL.getStart()), (short) Symbol.getColumn(SQL.getStart()));
+        _node_.setEnd(Symbol.getLine(RPAREN.getEnd()), (short) Symbol.getColumn(RPAREN.getEnd()));
+        return new Symbol(_node_); :}
+
+  | SQLNUMROWS.SQLNUMROWS LPAREN.LPAREN IDENTIFIER.IDENTIFIER RPAREN.RPAREN {: ASTNode _node_ = new SqlNumRowsExpr(new VarRefExpr(((String)IDENTIFIER.value)));
+        _node_.setStart(Symbol.getLine(SQLNUMROWS.getStart()), (short) Symbol.getColumn(SQLNUMROWS.getStart()));
+        _node_.setEnd(Symbol.getLine(RPAREN.getEnd()), (short) Symbol.getColumn(RPAREN.getEnd()));
+        return new Symbol(_node_); :}
+
+  | strfactor.s {: ASTNode _node_ = s;
+        _node_.setStart(Symbol.getLine(_symbol_s.getStart()), (short) Symbol.getColumn(_symbol_s.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_s.getEnd()), (short) Symbol.getColumn(_symbol_s.getEnd()));
+        return new Symbol(_node_); :}
+
+  | strfactor2.s {: ASTNode _node_ = s;
+        _node_.setStart(Symbol.getLine(_symbol_s.getStart()), (short) Symbol.getColumn(_symbol_s.getStart()));
+        _node_.setEnd(Symbol.getLine(_symbol_s.getEnd()), (short) Symbol.getColumn(_symbol_s.getEnd()));
+        return new Symbol(_node_); :}
+  ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+

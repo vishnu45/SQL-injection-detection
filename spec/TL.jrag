@@ -1,0 +1,74 @@
+import java.util.Map;
+import utility.Pair;
+import utility.SetRepUtility;
+import AST.*;
+
+aspect TL {
+	/** The kill function for Taint Location Analysis */
+	syn Set<Map.Entry> Block.killTL();
+	
+	eq AssignS.killTL()  {
+		Set<Map.Entry> ret = SetRepUtility.crossWith(getVar(), SetRepUtility.singleton(new NumLabel("?")));
+		ret.addAll(SetRepUtility.crossWith(getVar(), progLabels()));
+		return ret;
+	}
+	eq LabeledExpr.killTL() = SetRepUtility.emptySet();
+	eq EchoS.killTL() = SetRepUtility.emptySet();
+	eq RequireS.killTL() = SetRepUtility.emptySet();
+	
+	/** The gen function for Taint Location Analysis */
+	syn Set<Map.Entry> Block.genTL();
+	eq AssignS.genTL() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		Expr exp = getExpr();
+		if (exp instanceof PostExpr){
+			ret.addAll(SetRepUtility.singleton(
+       	         new Pair<String,Label>(getVar(), getLabelAST())));
+		}
+		else{
+			Set<String> fvset = SetRepUtility.emptySet(); //store Free Variables and Read Variables of Expression
+		    fvset.addAll(exp.FV());
+		    
+		    Set<Map.Entry> tvmap = this.TVentry(); //get the Tainted Variables pair at entry to the block
+		    Iterator n = tvmap.iterator(); 
+		    while(n.hasNext()) {
+		         Map.Entry me = (Map.Entry)n.next();
+		         if (fvset.contains((String) me.getKey())){
+		        	 ret.addAll(SetRepUtility.singleton(
+		        	         new Pair<String,Label>(getVar(), getLabelAST())));
+		        	 break;  //added since a variable can be tainted with multiple tainted variables at same label
+		         }      	 
+		    }
+		}
+	    return ret;
+	}
+
+	eq LabeledExpr.genTL() = SetRepUtility.emptySet();
+	eq EchoS.genTL() = SetRepUtility.emptySet();
+	eq RequireS.genTL() = SetRepUtility.emptySet();
+				
+	/** Compute the entry information for the TL analysis. */
+	syn Set<Map.Entry> Block.TLentry() circular [SetRepUtility.emptySet()];
+    eq Block.TLentry() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet();
+		if (getLabelAST().equals(progInitLabel())) {
+			ret.addAll(SetRepUtility.crossWith(progFV(), new NumLabel("?")));
+		} else {
+			for (Label l : inFlows()) {
+				Block b = l.itsBlock();
+				ret.addAll(b.TLexit());
+			}
+		}		
+		return ret;
+	}
+	
+	/** Compute the exit information for the TL analysis. */
+	syn Set<Map.Entry> Block.TLexit() circular [SetRepUtility.emptySet()];
+    eq Block.TLexit() {
+		Set<Map.Entry> ret = SetRepUtility.emptySet(); // start with a fresh set!
+		ret.addAll(this.TLentry());
+		ret.removeAll(this.killTL());
+		ret.addAll(this.genTL());		
+		return ret;
+	}
+}

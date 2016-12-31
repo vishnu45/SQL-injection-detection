@@ -1,0 +1,134 @@
+<!-- Targets for working from terminal window:
+       build (default) - generates java files and compiles them
+       test            - runs junit test cases
+     Targets for working from Eclipse:
+       gen             - generates java files
+	 General targets:
+       clean           - removes all generated files and all class files
+	   doc             - generate javadoc documentation
+ -->
+
+<project 
+	name    = "php" 
+	default = "build" 
+	basedir = "." >
+	
+	<property name = "tools.dir" 	value = "tools" />
+	<property name = "parser.name"	value = "phpParser" />
+	<property name = "scanner.name"	value = "phpScanner" />
+	<property name = "package.ast" 	value = "AST" />
+	<property name = "gen.dir" 		value = "AST" />
+	<property name = "spec.dir" 	value = "spec" />
+	<property name = "test-reports.dir" value = "test-reports" />
+
+	<property name = "junit.jar"    value = "${tools.dir}/junit-4.11.jar" />
+	
+	<taskdef
+		name      = "jastadd"
+		classname = "jastadd.JastAddTask" 
+		classpath = "${tools.dir}/jastadd2.jar" />
+
+	<taskdef 
+		name	  = "jflex" 
+		classname = "JFlex.anttask.JFlexTask" 
+		classpath = "${tools.dir}/JFlex.jar" />
+	
+  	<taskdef 
+  		name	  = "beaver" 
+  		classname = "beaver.comp.run.AntTask" 
+  		classpath = "${tools.dir}/beaver.jar" />
+
+	
+	<target name = "build" depends = "gen" >
+			<javac 
+				debug     = "true" 
+				srcdir    = "." 
+				classpath = ".:${tools.dir}/junit.jar:${tools.dir}/beaver.jar" />
+	</target>
+	
+	<target name="gen">
+		    <jastadd 
+				package = "${package.ast}" 
+				outdir  = "."
+				lineColumnNumbers = "true"
+				rewrite = "true"
+				>
+				<fileset dir = "${spec.dir}" >
+					<include name = "*.ast" />
+					<include name = "*.jrag" />
+					<include name = "*.jadd" />
+				</fileset> 
+		    	
+		    </jastadd>
+
+		    <echo message = "Running jflex"/>
+		    
+			<jflex 
+				file   = "${spec.dir}/php.flex" 
+				outdir = "${gen.dir}" 
+				nobak  = "yes" />
+		
+			<echo message = "Generating parser phase 1, translating .lalr to .beaver ..."/>
+				
+			<concat 
+				destfile = "${gen.dir}/${parser.name}.all" 
+				binary   = "true" 
+				force    = "false" >
+						
+				<filelist dir = ".">
+					<file name = "${spec.dir}/preamble.parser" />
+					<file name = "${spec.dir}/php.parser" />
+				</filelist>
+			</concat>
+				
+			<!-- Running JastAddParser --> 
+  	    <java 
+				classpath="${tools.dir}/JastAddParser.jar:${tools.dir}/beaver.jar" 
+				classname="Main" 
+				fork="true">
+					<arg value="--no-beaver-symbol" />
+					<arg value="${gen.dir}/${parser.name}.all" />
+					<arg value="${gen.dir}/${parser.name}.beaver" />
+			</java>
+			
+	    	<echo message = "Generating parser phase 2, translating .beaver to .java ..."/>
+		
+		    <beaver 
+		    	file		  = "${gen.dir}/${parser.name}.beaver" 
+		    	terminalNames = "yes" 
+		    	compress	  = "no" 
+		    	useSwitch	  = "yes" />
+	 	
+	</target>
+  	
+	<target name = "clean" >
+		<delete dir="${test-reports.dir}"/>
+		<delete dir="${gen.dir}"/>
+		<delete>
+				<fileset dir = "."> 
+					<include name= "**/*.class"/>
+				</fileset>
+		</delete>
+	</target>
+
+	<target name="test" depends="build" >
+		<mkdir dir="${test-reports.dir}" />
+		<junit>
+			<classpath>
+				<pathelement path="." />
+				<pathelement path="${tools.dir}/junit.jar" />
+				<pathelement path="${tools.dir}/beaver.jar" />
+			</classpath>
+			<formatter type="brief" usefile="false" />
+			<formatter type="xml"/>
+
+			<batchtest todir="${test-reports.dir}">
+				<fileset dir=".">
+					<include name="tests/*.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+
+</project>
