@@ -20,18 +20,18 @@ These three analysis combined are used to determine the **SQL-Injection Attack (
 
 | Folder        | Description   													|
 | :-----------: |:------------------------------------------------------------------|
-| Apps      	| contains all the files for printing outputs 						|
-| Spec			| contains .ast, .flex, .parser and .jrag files						|
-| Tests			| contains all the JUnit test cases									|
-| examples		| contains all the php example files used to test the application	|
-| AST			| contains all the generated AST files								|
-| utility		| contains all utility functions used								|
-| php root		| contains all the folders, build.xml and .launch files				|
+| [AST](https://github.com/vishnu45/SQL-injection-detection/tree/master/AST)		| contains all the generated AST files			|
+| [apps](https://github.com/vishnu45/SQL-injection-detection/tree/master/apps)     	| contains all the files for printing outputs 	|
+| [examples](https://github.com/vishnu45/SQL-injection-detection/tree/master/examples) | contains all the php example files used to test the application	|
+| [spec](https://github.com/vishnu45/SQL-injection-detection/tree/master/spec)		| contains .ast, .flex, .parser and .jrag files	|
+| [tests](https://github.com/vishnu45/SQL-injection-detection/tree/master/tests)	| contains all the JUnit test cases				|
+| [utility](https://github.com/vishnu45/SQL-injection-detection/tree/master/utility)| contains all utility functions used			|
+| [root](https://github.com/vishnu45/SQL-injection-detection)						| folder with build.xml, .launch files and rest |
 
 
 #### Application execution
 
-For running the example say ae9.php for SA analysis, example name has to be changed in the phpSA.launch file, then we run phpSA.launch as phpSA.Similarly, other launch files can be used to run other analysis for different examples.
+For running the example say ae9.php for SA analysis, example name has to be changed in the phpSA.launch file, then we run phpSA.launch as phpSA. Similarly, other launch files can be used to run other analysis for different examples.
 
 #### Sample run
 
@@ -70,10 +70,12 @@ echo $username;
 
 #### Limitations
 
-+ We have covered only limited grammar of .php which is sufficient to demonstrate possible SQL-Injection Attack.
++ Covered only limited grammar of .php which is sufficient to demonstrate possible SQL-Injection Attack.
 
 
 + If tainted variable is used in the Branch Condition, then the entire block of statements related to the branch condition, would be affected. The path taken on basis of this tainted variable could affect the program flow. We only warn the Programmer by indicating if the variable used in the Branch Condition is tainted. Besides this we also show that if the individual statement in the conditional block is tainted. 
 
 
 + Any file referenced through “require” statement like connect.php in the example code used, could also have tainted variables. Such referenced files are required to be separately checked for tainted variables and SQL-Injected attack. If such referenced files have tainted variables then the assumption that initial taint location for the program free variables as not defined does not hold good. 
+
+**NOTE**: This work was done as part of the COP5021 - Program Analysis course along with Lavanya Gunasani and [Tripti Gupta](https://www.linkedin.com/in/tripti-gupta-668a0699).
