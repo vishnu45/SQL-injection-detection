@@ -5,6 +5,8 @@ A java based framework for detecting SQL injection vulnerable sections within PH
 #### Project Objectives
 
 The application would provide the programmer warnings indicating the label and the tainted variable which might cause the SQL injection attack. The 3 static analysis questions that project is aimed at answering are:
+
+
 1. **Initial Taint Analysis (IT)**: For each program point, which user input is available in a variable x, if it has been assigned to x on some path and the value of the variable has not changed since then. This will give at every program point, all the pairs of tainted variables and user input from which variable got tainted (directly tainted from user input).
 
 
